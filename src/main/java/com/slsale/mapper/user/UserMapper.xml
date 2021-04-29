@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.slsale.mapper.user.UserMapper">
+
+    <select id="loginCodeIsExit" parameterType="user" resultType="int">
+        select count(1) from au_user
+            <trim prefix="where" prefixOverrides="and | or">
+                <if test="loginCode !=null "> and loginCode = #{loginCode}</if>
+                <if test="id !=null"> and id != #{id}</if>
+                <if test="isStart != null"> and isStart = #{isStart}</if>
+            </trim>
+    </select>
+
+    <select id="selectByLoginCodeAndPwd" parameterType="user" resultType="user">
+        select * from au_user
+            <trim prefix="where" prefixOverrides="and | or">
+                <if test="loginCode != null"> and loginCode = #{loginCode}</if>
+                <if test="password != null"> and password = #{password}</if>
+                <if test="isStart != null"> and isStart = #{isStart}</if>
+            </trim>
+    </select>
+
+    <select id="selectTotalCount" parameterType="user" resultType="int">
+        select count(1) from au_user;
+    </select>
+
+    <select id="selectUserListByPage" parameterType="user" resultType="user">
+        select * from au_user
+            <trim prefix="where" prefixOverrides="and | or">
+                <if test="loginCode != null"> and loginCode = #{loginCode}</if>
+                <if test="referCode != null"> and referCode = #{referCode}</if>
+                <if test="roleId != null"> and roleId = #{roleId}</if>
+                <if test="isStart != null"> and isStart = #{isStrat}</if>
+            </trim>
+            order by createTime desc limit #{starNum},#{pageSize}
+    </select>
+
+    <select id="selectUserById" parameterType="user" resultType="user">
+        select * from au_user where id = #{id}
+    </select>
+</mapper>

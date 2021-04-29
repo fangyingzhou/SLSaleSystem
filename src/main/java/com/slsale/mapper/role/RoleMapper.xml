@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.slsale.mapper.role.RoleMapper">
+
+    <resultMap id="roleNameAndId" type="role">
+        <id property="id" column="id"/>
+        <result property="roleName" column="roleName"/>
+    </resultMap>
+    <select id="selectRoleNameAndId" resultMap="roleNameAndId">
+        select * from au_role where isStart = 1
+    </select>
+
+</mapper>

@@ -1,0 +1,126 @@
+1.修改操作当点击"修改"按钮：id="${user.id}
+
+    1.首先根据前端传递的ID,发送ajax()请求,到数据库中查出用户对象 <input type="hidden" id="m_id" name="id" />
+
+    2.将实体类对象转换成JSON格式的字符串:
+        JSONObject jsonObject = JSONObject.fromObject(user);
+        String cjson = jsonObject.toString();
+        js中将字符串转成json对象：var json = eval("("+cjson+")");
+
+    3.将集合List转换成JSON格式的数组
+        JSONArray jsonArray = JSONArray.fromObject(list);
+        String cjson = jsonArray.toString(); //转换成json格式的字符串
+
+    4.将controller中传递过来的集合在页面中 转换成json格式的数组 传递到js中
+
+
+    6.根据返回的对象信息对前台表单字段进行赋值；
+        1.角色下拉框：根据页面返回的JSON格式的数组进行拼接；
+            $("#m_roleId").html('');
+            var roleId = m.roleId;
+            var roleName = m.roleName;
+
+            if(roleId == null || roleId ==""){
+                 $("#m_roleId").append("<option value=\"\" selected="selected">-请选择-</option>");
+            }
+
+            for(var i=0;i<roleJsonList.length;i++){
+                //如果用户的角色ID等于当前循环遍历的角色ID 该角色被选中
+                if(roleJsonList[i].roleId == roleId){
+                    $("#m_roleId").append("<option value=\""+roleId+"\" selected="selected">"+roleName+"</option>");
+                }else{
+                    $("#m_roleId").append("<option value=\""+roleJsonList[i].roleId+"\">"+roleJsonList[i].roleName+"</option>");
+                }
+            }
+
+        2.会员类型下拉框：字段的属性联动 根据角色ID 判断"会员类型"下拉框的值：
+
+            $("#m_selectusertype").html('');
+            var userType = m.userType;
+            var userType = m.userTypeName;
+
+            if(userType == null || userType ==""){
+                $("#m_selectusertype").append("<option value=\"\" selected=\"selected\">-请选择-</option>");
+            }
+
+            //如果当前用户的角色为会员即roleId==2的时候 发送一个ajax()请求 加载会员类型
+            if(roleId == 2){
+                //发送ajax()请求
+                $.post('/backend/loadusertype.html',{'s_role':roleId},function(data){
+                    if(data !=''){
+                        for(var i=0;i<data.length;i++){
+                            //userType对应数据字典data_dictionary表的valueId
+                            if(data[i].valueId == userType){
+                                $("#m_selectusertype").append("<option value=\""+userType+"\" selected=\"selected\">"+userTypeName+"</option>");
+                            }else{
+                                 $("#m_selectusertype").append("<option value=\""+data[i].valueId+"\">"+data[i].valueName+"</option>");
+                            }
+                        }
+                    }else{
+                        alert("加载用户类型失败!");
+                    }
+                },'json');
+            //非会员
+            }else{
+                $("#m_selectusertype").append("<option value=\"\" selected=\"selected\">-请选择-</option>");
+            }
+
+        3.证件类型下拉框：
+            1.根据页面返回的JSON格式的数组 对证件类型下拉框进行拼接 取值从数据字典表data_dictionary中获取数据
+            var cardType = m.cardType;
+            var cardTypeName = m.cardTypeName;
+
+            if(cardType ==null || cardType==""){
+                $("#m_cardtype").append("<option value=\"\" selected=\"selected\">--请选择--</option>");
+            }
+            for(var i=0;i<cardTypeJsonList.length;i++){
+                if(cardTypeJsonList[i].valueId == cardType){
+                    $("#m_cardtype").append("<option value=\""+cardType+"\" selected=\"selected\">"+cardTypeName+"</option>");
+                }else{
+                    $("#m_cardtype").append("<option value=\""+cardTypeJsonList[i].valueId+"\" >"+cardTypeJsonList[i].valueName+"</option>");
+                }
+            }
+
+        4.当下拉框的value值发生改变的时候,获取下拉框的文本值
+            $("#m_selectusertype").change(function(){
+                //find()搜索所有与指定表达式匹配的元素  text()取得所有匹配元素的内容 获取当前选中项的text
+                var userTypeName = $("#m_selectusertype").find("option:selected").text();
+                $("#m_selectusertypename").val(userTypeName);
+            });
+
+        5.当角色下拉框的value值发生改变的时候 级联到会员下拉框 下拉框的联动属性：
+            $("#m_roleId").change(function(){
+                var roleId = $("#m_roleId").val();
+                $("#m_rolename").val($("#m_roleId").find("option：selected").text());
+                $("#m_selectusertype_").empty();
+                if(roleId ==2){
+                    $.post('/backend/loadusertype.html',{'s_roleId':roleId},function(data){
+                           if(data != ''){
+                                //因为是修改操作 值是等待用户选取的 因此不存在被选中的情况的
+                                $("#m_selectusertype").append("<option value=\""+data[i].valueId+"\">"+data[i].valueName+"</option>");
+                           }else{
+                                alert("加载用户类型失败");
+                           }
+                    },'json');
+                }else{
+                     $("#m_selectusertype").append("<option value=\"\">-请选择--</option>");
+                }
+                $("m_selectusertypename").val('');
+            });
+
+    7.springmvc中的图片上传：
+        1.在springmvc引入文件上传组件:<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+
+        2.将来自客户端的二进制字节流封装成MultipartFile类，在服务器端通过MultipartFile封装类 获取到来自客户端的文件流
+
+        3.通过apache提供的文件上传工具类FileUtils的copyInputStreamToFile(InputStream,File)方法将文件写入到指定的路径中;
+
+        4.文件下载：byte[] bytes = FileUtils.readFileToByteArray(file);
+
+        5.快速的获取到文件所在磁盘的目录
+         String path = request.getSession().getServletContext().getRealPath("/statics/uploadfiles")；
+
+        6.获取相对路径 相对于项目的根路径
+          String path = request.getContextPath() 获取的即是 / 可用于图片的回显
+
+
