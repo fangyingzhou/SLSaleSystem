@@ -14,8 +14,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpSession;
@@ -23,12 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @Auther:
- * @Date:2021/4/26
- * @Description:com.slsale.controller
- * @Version:1.0
- */
+
 @Controller
 public class AuthorityController {
 
