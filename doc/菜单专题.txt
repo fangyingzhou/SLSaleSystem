@@ -1,0 +1,437 @@
+1.多级菜单，递归方式，逐一遍历：
+    1.创建菜单对象Menu:
+        public class Menu{
+            private List<Object> data;
+        }
+
+    2.菜单中每个节点对象：
+        public class Node{
+            private String U;
+            private String N;
+            private List<Object> I; //当前节点下所有子菜单的集合
+        }
+
+    3.Service实现类中：
+        @Service
+        public class TbItemCatServiceImpl implements TbItemCatService{
+
+            @Reference
+            private TbItemCatDubboService tbItemCatDubboService;
+
+            public Menu showMenu(){
+
+                //获取所有的一级菜单 select * from tb_item_cat where parentId = #{id}
+                List<TbItemCat> tbItemCatList = tbItemCatDubboService.selByPid(0);
+
+                List<Node> list = showNode(tbItemCatList);
+
+                Menu menu = new Menu();
+
+                menu.setData(list);
+
+                return menu;
+            }
+            //返回的是存储了所有节点对象的集合
+            public List<Node> showNode(List<TbItemCat> cats){
+
+                //存储整个菜单下每个节点对象
+                List<Node> nodes = new ArrayList<>();
+
+                //循环遍历所有的一级主菜单集合
+                for(TbItemCat cat:cats){
+
+                    //如果当前遍历的是父菜单 说明其下有子菜单
+                    if(cat.getIsParent()){
+
+                        //将数据库中查询到的数据封装成节点对象
+                        Node node = new Node();
+
+                        node.setU("/products/"+cat.getId()+".html");
+
+                        node.setN("<a href='/products/"+cat.getId()+".html'>"+cat.getName()+"</a>");
+
+                        //如果当前遍历的菜单为父菜单，其下包含子菜单集合 获取当前菜单下的所有子菜单 递归方式 自己调自己
+                        node.setI(showNode(tbItemCatDubboService.selByPid(cat.getId()))); //I中存储的是当前菜单下子菜单的集合
+
+                        nodes.add(node);
+
+                    }else{
+                        //如果当前遍历的菜单不是父菜单 其下没有子菜单 即为最底层菜单 但是还是同一个父菜单下
+                        nodes.add("/products/"+cat.getId()+".html|"+cat.getName()+"");
+                    }
+                }
+               return nodes; //该集合nodes中存储了当前菜单中 每一个节点对象
+            }
+        }
+
+2.根据当前登录者的角色来获取该用户所拥有的菜单功能
+    1.声明一个菜单对象Menu;
+        public class Menu{
+            private Function mainFunction;
+            private List<Function> subFunctionList; //父菜单下的子菜单集合
+        }
+    2.Service实现类中：
+
+        1.根据当前登录者的角色(roleId)获取该用户所拥有的一级主菜单功能 通过第三方维护表au_authority将角色与功能相关联；
+            select * from au_function where parentId = 0 and id in (select functionId from au_authority where roleId = #{roleId})
+
+        2.根据父菜单ID获取子菜单的集合
+            select * from au_function where parentId = #{id} and id in(select functionId from au_authority where roleId = #{roleId})
+
+        3.Service实现类中：
+            @Service
+            public class FunctionServiceImpl implements FunctionService{
+                @Autowired
+                private FunctionMapper functionMapper;
+
+                //根据当前登录者的角色ID 获取该用户所拥有的菜单功能
+                public List<Menu> getFunctionListByCurrentUser(int roleId){
+
+                    Authority authority = new Authority();
+                    authority.setRoleId(roleId);
+
+                    //根据当前登录者的角色获取一级主菜单
+                    List<Function> fList = functionMapper.getMainFunctionList(authority);
+
+                    List<Menu> menus = subFunctionList(List<Function> fList,int roleId);
+
+                    return menus;
+                }
+
+                private List<Menu> subFunctionList(List<Function> fList,int roleId){
+
+                    //创建集合List 集合中存储的每一个对象为菜单节点对象 包含主菜单对象 以及 主菜单下的子菜单集合
+                    List<Menu> menus = new ArrayList<>();
+
+                    for(Function func:fList){
+
+                        //判断当前遍历的菜单对象是否为父菜单
+                        func.setRoleId(roleId);
+
+                        //创建节点对象
+                        Menu menu = new Menu();
+
+                        menu.setMainFunction(func);
+
+                        //当前主菜单下的子菜单集合
+                        menu.setSubFunctionList(functionMapper.getSubFunctionList(func));
+
+                        menus.add(menu);
+                    }
+
+                    return menus;
+                }
+            }
+
+        4.登录Controller:
+            1.用户登录成功后在js中通过：window.location.href="/main.html"请求到控制器中;
+
+                @RequestMapping(value="/main.html")
+                public Object main(HttpSession session,HttpServletResponse response,Model model){
+                    Map<String,Object> baseModel = new ArrayList<>();
+                    User user =  session.getAttribute(Constant.SESSION_USER);
+
+
+                    //如果用户不为null 则说明用户已经登录 存在session中
+                    if(user != null){
+
+                        String key = "menuList:"+user.getRoleId();
+
+                        //判断redis中是否存在key 如果存在key则直接从缓存中获取菜单数据
+                        if(RedisAPI.exist(key)){
+
+                            //根据key获取value值
+                            String value = RedisAPI.getValueByKey(key);
+
+                            if(value ！=null && !value.equals("")){
+
+                                baseModel.put("mList",value);
+
+                            }else{
+
+                                //如果key对应的value值为null 则说明菜单列表为空 重定向到登录页面
+                                return "redirect:/";
+
+                            }
+                        }else{
+
+                            //如果redis中不存在key 则需要从数据库中查询数据 并将查询出的菜单数据存放到redis缓存中
+                            mList = functionService.getFunctionListByCurrentUser(user.getRoleId());
+
+                            //将集合转换成JSON格式的数组
+                            String jsonStr = JSONArray.fromObject(mList).toString();
+
+                            //将菜单集合存储到redis中
+                            RedisAPI.set(key,jsonStr);
+
+                            //将菜单集合字符串存储到Map中
+                            baseModel.put("mList",mList);
+
+                        }
+
+                         //将子菜单的url写入到redis中
+                         String urlKey = "Role-"+user.getRoleId()+"-urlList";
+
+                         //如果Redis中不存在key 则从数据库中查询当前角色可以请求的链接地址
+                        if(!RedisAPI.exist(urlKey)){
+
+                            //select * from au_function where parentId > 0 and id in (select functionId from au_authority where roleId = #{roleId})
+
+                            Authority authority = new Authority();
+                            authority.setRoleId(user.getRoleId());
+
+                            //获取当前角色可以访问的请求地址
+                            List<Function> fList = functionService.getUrlListByRoleId(authority);
+
+                            //StringBuffer是线程安全的 StringBuilder是线程不安全的 拼接字符串的意义
+                            StringBuffer sb = new StringBuffer();
+
+                            for(Function func:fList){
+                                sb.append(func.getFuncUrl());
+                            }
+
+                            //将当前角色可以访问的请求地址存储到redis中
+                            RedisAPI.set(urlKey,sb.toString());
+
+                        }
+
+                        //model中存储的是Map map中的key分别为user 以及 mList
+                        model.addAttributes(baseModel);
+
+                        //将系统中的基本数据模块存储到session中 与其它功能模块共享数据
+                        session.setAttribute(Constants.SESSION_BASE_MODE,baseModel);
+
+                        return "main";
+
+                    }else{
+                       return "redirect:/";
+                    }
+                }
+
+3.为角色赋予权限：
+    1.当前端用户点击"权限管理"的时候，即会发送一个请求到控制器，控制器端返回系统中所有的角色列表
+        @RequestMapping(value="/backend/authoritymanage.html")
+        public Object getRoleIdAndName(Model model){
+            List<Role> roleList = roleService.getRoleIdAndName();
+            model.addAttribute("roleList",roleList);
+            return "/backend/authority";
+        }
+
+    2.在authoruty.jsp页面中：
+        <c:forEach items="${roleList}" var="role">
+            <li>
+                <a class="roleNameAuthority" rolename="${role.roleName}" roleid="${role.id}" >${role.roleName}</a>
+            </li>
+        </c:forEach>
+
+    3.当前端用户点击某角色名称的时候：1.首先获取系统中所有的功能对象；2.再获取该角色所拥有的功能；js代码如下：
+        $(".roleNameAuthority").click(function(){
+            var roleName = $(this).attr("rolename");
+            var roleid = $(this).attr("roleid");
+            $("#roleidhide").val(roleid);
+
+            $("#selectrole").html("当前配置的角色为："+roleName);
+
+            //发送一个ajax请求 获取系统中所有的功能
+            $.ajax({
+                url:'/backend/getfunctions.html',
+                type:'post',
+                dataType:'html',
+                timeout:1000,
+                error:function(){
+
+                },
+                success:function(data){
+
+                    //将控制器端返回的字符串转换成JSON对象
+                    var json = eval("("+data+")");
+
+                    var listr = "";
+                    for(var i=0;i<json.length;i++){
+                        listr += "<li>";
+                        listr += "<ul>";
+                        listr += "<li><input type="checkbox" funcid=\""+json[i].mainFunction.id+"\"/>"+json[i].mainFunction.functionName+"</li>";
+
+                        //父菜单下的子菜单
+                        for(var j=0;j<json[i].subFunctionList.length;j++){
+                            listr += "<li><input type="checkbox" funcid="+json[i].subFunctionList[j].id+">"+json[i].subFunctionList[j].functionName+"</li>";
+                        }
+
+                        listr += "<ul></li>";
+                    }
+                    $("#functionList").html(listr);
+
+                    //循环遍历功能
+                    $("#functionList:checkbox").each(function(){
+                        var checkbox = $(this); //获取到当前遍历的元素
+                        var roleId = $("#roleidhide").val();
+                        var functionId = checkbox.attr("funcid");
+
+                        //每循环一次发送一个ajax请求 传递一个角色ID 以及当前 功能ID 即可以获取到多方下的唯一一个对象
+                        $.ajax({
+                            url:'/backend/getdefault.html',
+                            type:'post',
+                            data:{rid:roleId,fid:functionId},
+                            dataType:'html',
+                            timeout:1000,
+                            error:function(){
+
+                            },
+                            success:function(data){
+                                if(data != "" && data=="success"){
+                                    //复选框选中
+                                    checkbox.attr("checked",true);
+                                }else{
+                                    //复选框未选中
+                                    checkbox.attr("checked",false);
+                                }
+                            }
+                        });
+                    });
+                }
+            });
+        });
+
+    4.当前端用户为选中的角色下的功能菜单重新赋值的时候，即修改当前角色下的权限，首先用户得勾选系统中得功能菜单
+        $("#confirmsave").click(function(){
+            if(confirm("您确定要修改当前角色的权限吗？")){
+                //获取当前被修改得角色ID 这里获取角色ID的主要作用是传递到后台中 后台service中将根据改角色ID 删除和新增au_authority表
+                var rid = $("roleidhide").val();
+                var ids += rid+"-";
+
+                //循环遍历当前功能列表下的所有复选框 获取当前被勾选的复选框功能菜单
+                $("#functionList :checkbox").each(function(){
+                    if($(this).attr("checked")=="checked"){
+                        ids += $(this).attr("funcid") + "-";
+                    }
+                });
+
+                //获取到被勾选的功能菜单ID以后 发送一个ajax请求用于修改当前角色下的权限功能
+                $.ajax({
+                    url:'/backend/modifyAuthority.html',
+                    type:'post',
+                    data:{ids:ids},
+                    dataType:'html',
+                    timeout:1000,
+                    error:function(){
+
+                    },
+                    success:function(data){
+
+                    }
+                });
+            }
+        });
+
+
+    4.获取系统中所有的功能：select * from au_function where parentId = #{id}
+        @RequestMapping(value="/backend/functions.html")
+        @ResponseBody
+        public Object functions(){
+            Function function = new Function();
+
+            function.setId(0);
+            List<Function> fList = functionService.getFunctions(function);
+
+            //创建一个集合 该集合中存储的每一个对象都包含一级节点一级一级节点下的子节点对象
+            List<RoleFunctions> rList = new ArrayList<>();
+
+            //循环遍历所有的父节点 循环一次 封装一个节点对象
+            for(Function func:fList){
+                RoleFunctions  roleFunction = new RoleFunctions();
+                roleFunction.setMainFunction(func);
+                List<Function> subFunctionList = functionService.getFunctions(func);
+                roleFunction.setSubFunctionList(subFunctionList);
+                rList.add(roleFunction);
+            }
+
+            //将集合数组转换成JSON格式的数组
+            JSONArray jsonArray = JSONArray.fromObject(rList);
+            String jsonStr = jsonArray.toString();
+
+            return jsonStr;
+        }
+
+    5.根据角色ID和功能ID 即可以获取到多方下的唯一一个对象 select * from au_authority where roleId = #{roleId} and functionId = #{functionId}
+        @RequestMapping(value="/backend/getDefaultAuthority.html")
+        @ResponseBody
+        public Object getdefaultAuthority(@RequestParam(value="rid")Integer rid,@RequestParam("funcid")Integer funcid){
+
+        }
+
+    6.修改当前角色下的权限:当前端用户确认修改当前角色的权限的时候发送一个请求到后台控制器中 在到达控制器之前被拦截器拦截检测是否登录
+        主要针对的是au_auhority表进行的操作 根据当前用户的角色 将该用户可以请求的资源链接地址存放redis中 拦截器中根据url的可以值
+        从redis中获取value值 并且判断当前请求的uri是否存在于value中
+        @RequestMapping(value="/backend/modifyAuthority.html")
+        @ResponseBody
+        public Object modifyAuthority(HttpSession session,@RequestParam(value="ids")String ids){
+
+            //从session中获取当前登录用户
+            User user = (User)session.getAttribute(Constant.SESSION_USER);
+            List<Menu> mList = null;
+
+           //service中接到传递过来的数组之后 通过数组循环遍历 拼接成字符串传递到sql中
+            String[] idsArr = ids.split("-");
+            if(idsArr != null && idsArr.length >0){
+                authorityService.hl_modifyAuthority(idsArr,user.getLoginCode());
+
+                //当前用户的权限被修改之后 需要更新redis中的数据
+                mList = functionService.getFunctionListByCurrentUser(user.getRoleId());
+                String jsonStr = JSONArray.fromObject(mList).toString();
+                redisAPI.set(menuList-"+user.getRoleId(),jsonStr);
+
+                //当前用户的权限被修改之后，对应的访问链接地址同时需要更新
+                select * from au_function where parentId > 0 and id in (select functionId from au_authority where roleId = #{roleId})
+
+                Authority authority = new Authority();
+                authority.setRoleId(Integer.valueOf(idsArr[0]));
+                List<Function> fList = functionService.getSubFunctionUrlList(authority);
+
+                if(fList != null && fList.size()>0){
+
+                    //循环遍历当前角色下的所有子菜单 主要是为了取出当前用户可以访问的请求地址
+                    StringBuffer sb = new StringBuffer();
+
+                    for(Function func:fList){
+                       sb.append(func.getFuncUrl());
+                    }
+
+                    //更新数据库中链接地址
+                    redisAPI.set("Role-"+idsArr[0]+"-urlList",sb.toString());
+                }
+            }
+        }
+
+    7.Service业务实现类中，修改角色下的权限：注意使用声明式事务 idsArr未前端页面传递过来 数组中的第一个元素未当前被修改的角色ID
+        public boolean hl_modifyAuthrity(String[] idsArr,String createdBy){
+
+            //根据当前角色ID删除该角色下的所有权限 主要针对的是au_authority表
+            Authority authority = new Authority();
+            String roleId = idsArr[0];
+            authority.setRoleId(Integer.valueOf(roleId));
+            authorityMapper.delete(roleId); //delete from au_authority where roleId = #{roleId}
+
+            String ids = "";
+            //循环的时候i=1开始，因为0为角色ID
+            for(int i=1;i<idsArr.length;i++){
+                ids += idsArr[i]+",";
+            }
+            // select * from au_function where id in(${sqlString}) or
+               parentId in (select id form au_function where id in (${slqString}) and parentId > 0 )--剔除了一级菜单
+               or parentId = 999
+
+            if(ids != null && ids.contains(",")){
+                //截取 剔除最后一个","
+                ids = ids.subString(0,ids.lastIndexOf(",");
+                List<Function> fList = functionMapper.getFunctionAndIdIn(ids);
+                if(fList != null && fList.size()>0){
+                   for(Function func:fList){
+                       authority.setFunctionId(func.getId());
+                       authority.setCreatedBy(createdBy);
+                       authority.setCreateTime(new Date());
+                       authorityMapper.add(authority);
+                   }
+                }
+            }
+            return true;
+        }

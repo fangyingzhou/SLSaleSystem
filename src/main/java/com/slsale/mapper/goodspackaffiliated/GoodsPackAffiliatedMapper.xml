@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.slsale.mapper.goodspackaffiliated.GoodsPackAffiliatedMapper">
+
+    <!-- 主键为唯一与非空约束的组合
+        1.ResultMap:当数据库中的字段名称与实体对象的属性名称不一致的时候,由程序员手动控制sql查询结果与实体对象的映射
+                    但是最终查询的结果仍需要封装到实体对象中
+        2.ResultMap:一个对象的属性 与该对象对应的表字段不一致，如对象有的属性但是数据库表中无该字段对象，但是另一张表中有与之对应的字段
+                    由程序员手动控制SQL的查询结果与实体对象属性的映射
+        一个套餐ID 对应多个商品 相反 在商品中一个套餐ID对应一个套餐
+
+    -->
+    <resultMap id="mymap" type="goodsPackAffiliated">
+        <id column="id" property="id"/>
+        <result property="goodsPackId" column="goodsPackId"/>
+        <result property="goodsInfoId" column="goodsInfoId"/>
+        <result property="goodsName" column="goodsName"/>
+        <result property="goodsNum" column="goodsNum"/> <!--套餐中商品的数量-->
+        <result property="realPrice" column="realPrice"/> <!--商品的单机-->
+        <result property="unit" column="unit"/>
+    </resultMap>
+
+    <!--套餐与商品一一对应-->
+   <select id="selectGoodsPackAffiliatedListByPackId" parameterType="goodsPackAffiliated" resultMap="mymap">
+        select * from goods_pack_affiliated a,goods_info g where a.goodsInfoId = g.id
+            <if test="goodsPackId != null"> and a.goodsPackId = #{goodsPackId}</if>
+   </select>
+
+    <delete id="deleteGoodsPackAffiliated" parameterType="goodsPackAffiliated">
+        delete from goods_pack_affiliated where goodsPackId = #{goodsPackId}
+    </delete>
+
+    <insert id="addGoodsPackAffiliated" parameterType="goodsPackAffiliated">
+        insert into goods_pack_affiliated (goodsPackId,goodsInfoId,goodsNum) values (#{goodsPackId},#{goodsInfoId},#{goodsNum})
+    </insert>
+</mapper>

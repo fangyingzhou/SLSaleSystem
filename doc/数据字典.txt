@@ -1,0 +1,311 @@
+1.当前用户登录成功后，就会显示该用户角色所拥有权限菜单：当点击子菜单的时候就会发送一个请求链接地址
+
+    1.获取数据字典表中的所有的类型代码进行分类：select * from data_dictionary group by typeCode order by id asc
+        @RequestMapping(value="/backend/dicmanage.html")
+        public Object showDic(HttpSession session,Model model){
+
+            //获取系统中的基本数据模型 用户在登录成功的时候 就会将当前用户信息 以及 当前用户所拥有的权限功能存储到map中 存到session中
+             Map<String,Object> baseModel = (Map<String,Object>)session.getAttribute(Constant.SESSION_BASE_MODEL);
+
+            if(baseModel == null){
+                return "redirect:/";
+            }else{
+                List<DataDictionary> dicList = null;
+                try{
+                    dicList = dataDictionaryService.getDataDictionaryByCategory();
+                }catch(Exception e){
+                    e.printStack();
+                }
+            }
+            model.addAttribute("dicList",dicList);
+            model.addAttributes(baseModel);
+
+            return "/backend/dicmanage";
+        }
+
+        //前端用户点击类型名称typeName字段，其背后传递的是typeCode 其本质就是根据类型代码typeCode 获取该类型下的所有证件
+        @RequestMapping(value="/backend/getJson.html")
+        @ResponseBody
+        public Object getJson(@RequestParam(value="typeCode",required=false)String typeCode){
+            if(typeCode == null || typeCode.equals("")){
+                return "nodata";
+            }else{
+                DataDictionary dataDictionary = new DataDictionary();
+                dataDictionaty.setTypeCode(typeCode);
+                List<DataDictionary> dataList = dataDictionaryService.getDataDictionaries(dataDictionary);
+                if(dataList !=null && dataList.size()>0){
+                    String jsonStr = JSONArray.fromObject(dataList).toString();
+                    return jsonStr;
+                }else{
+                    return "nodata";
+                }
+            }
+        }
+
+        //修改证件类型的数值名称
+        @RequestMapping(value="/backend/modifydic.html")
+        @ResponseBody
+        public Object modifgDic(@RequestParam(value="dic",required=false)String dic){
+            if(dic == null || dic.equals("")){
+                return "nodata";
+            }else{
+
+                JSONObject jsonObject = JSONObject.fromObject(dic);
+                DataDictionary dataDictionary = (DataDictionary)JSONObject.toBean(jsonObject,DataDictionary.class);
+
+                //添加或者修改的时候 都需要判断添加的信息 或者 修改后的信息 数据库中是否已存在
+                select count(1) from data_dictionary where typeCode = #{typeCode} and valueName = #{valueName} and id != #{id}
+                int index = dataDictionaryService.typeCodeAndValueNameIsExist(dataDictionary);
+
+                if(index > 0){
+                    return "rename";
+                }
+
+                dataDictionaryService.modifyDataDictionary(dataDictionary);
+
+                return "success";
+            }
+        }
+
+        //删除证件类型下的某个子证件类型
+        @RequestMapping(value="")
+        @ResponseBody
+        public Object delDic(@RequestParam(value="delId",required=false)Integer delId){
+            if(delId == null){
+                return "nodata";
+            }else{
+                //delete from data_dictionary where id = #{id}
+                dataDictionaryService.delDataDictionary(delId);
+                return "success";
+            }
+        }
+
+        //在某个证件代码下添加 子证件类型
+        @RequestMapping(value="/backend/adddicsub.html")
+        @ResponseBody
+        public Object addDicSub(RequestParam(value="dicJson",required=false)String dicJson){
+            if(dicJson == null || dicJson.equals(""){
+                return "nodata";
+            }else{
+                JSONObject jsonObject = JSONObject.fromObject(dicJson);
+                DataDictionary dataDictionary = (DataDictionary)JSONObject.toBean(jsonObject,DataDictionary.class);
+
+                //判断前端表单中传递过来valueName是否重复 字段的唯一性校验可以通过表单的blur()事件 也可以通过 数据库查询
+                //select count(1) from data_dictionary where typeCode = #{typeCode} and valueName = #{valueName}
+                int index = dataDictionaryService.typeCodeAndValueNameIsExist(dataDictionary);
+
+                if(index >0){
+                    return "rename";
+                }
+
+                //select max(valueId) from data_dictionary where typeCode = #{typeCode}
+                Integer valueId = dataDictionaryService.getMaxValueId(dataDictionary) + 1;
+                dataDictionary.setValueId(valueId);
+                dataDicionaryService.addDic(dataDictionary);
+
+                return "success";
+            }
+        }
+    2.将根据类型代码进行分组后的证件类型展示到前端页面中： select * from data_dictionary group by typeCode order by id asc
+
+        <c:forEach items="${dicList}" var="data">
+            <li class="">
+                <a class="typeCodeList" typecode="${data.typeCode}" typename="${data.typeName}">"+data.typeName+"</a>
+                <span>
+                    <img class="modifyMainDic" id="${data.id}" typename="${data.typeName}" typecode="${data.typeCode}" src="/statics/img/ico10.png"/>
+                    <img class="delMainDic" id="${data.id}">
+                </span>
+            </li>
+        </c:forEach>
+
+        1.当鼠标移到某个证件类型的时候触发的事件
+            $("#maintitle").mouseenter({
+                $(this).children(".mainset").show();
+            });
+        2.当鼠标离开时触发的事件
+            $("#maintitle").mouseleave({
+                $(this).children(".mainset").hide();
+            });
+
+        3.当点击主证件类型的时候
+            $(".modifyMainDic").click(function(e){
+               var id = $(this).attr("id");
+               var typeCode = $(this).attr("typecode");
+               var typeName = $(this).attr("typename");
+
+                //显示的字段信息 用于前端用户的修改
+               $("#modifytypeCode").val(typeCode);
+               $("#modifytypeName").val(typeName);
+               $("#modifydicid").val(id);
+
+               //原始字段信息 用于隐藏
+               $("#modifydictypecode").val(typeCode);
+               $("#modifydictypename").val(typeName);
+               e.preventDefault();
+               $("#modifyDicModel").modal("show");
+            });
+
+    3.当前端用户点击某个类型名称时：其实质就是根据类型代码到数据库中查询 将查询出来的结果进行显示 该类型名称下的所有数据字典
+        select * from data_dictionary group by typeCode order by id asc;
+        //声明一个变量
+        var maxValueId = 0;
+
+        //当前端用户点击证件类型名称的时候 背后传递的参数是当前证件类型的名称typeName、类型代码typeCode
+        $(".typeCodeList").click(function(){
+
+            //获取<a>标签中 背后隐藏的属性参数值
+            var typeCode = $(this).attr("typecode");
+            var typeName = $(this).attr("typename");
+
+            //将当前的证件类型名称typeName、类型代码typeCode 赋值给
+            $("#typeDicSubCode").val(tyeCode);
+            $("#typeDicSubName").val(typeName);
+
+            //发送一个ajax请求 根据当前类型代码typeCode到数据库中查询
+            $.ajax({
+                url:'/backend/getJson.html',
+                type:'post',
+                data:{"typeCode":typeCode},
+                dataType:'html',
+                timeout:1000,
+                error:function(){
+
+                },
+                success:function(data){
+                    if(result == "failed"){
+                    	alert("查询"+typeName+"失败!");
+                    }else if(result == "nodata"){
+                        alert("查询"+typeName+"失败!")
+                    }else{
+                    	var json = eval("("+data+")");
+                    	$("#dicListUL").html('');
+                    	var listr = "";
+                    	//根据typeCode查询到的集合 循环遍历该类型代码typeCode下的所有证件
+                    	for(var i=0;i<json.length;i++){
+                    	   listr += <li id=\"li"+json[i].id+"\">;
+                            	listr += <div>类型代码:"+json[i].typeCode+"</div>;
+                            	listr += <div>类型名称:"+json[i].typeName+"</div>;
+                            	listr += <div>数据数值:<input type="text" id="" disabled="disabled" value=\""+json[i].valueId+"\"/></div>;
+                            	listr += <div>数值名称:<input type="text" id="valueNameText"+json[i].id+"" value=\""+json[i].valeName+"\"/></div>;
+                            	listr += <div class="editdiv">
+                            	listr += <img class="modifyDicValue" id=\""+json[i].id+"\" typecode=\""+json[i].typeCode+"\" typename=\""+json[i].typeName+"\" valuename=\""+json[i].valueName+"\" src="/statics/img/ico10.png">
+                            	listr += <img class="delDic" id=\""+json[i].id+"\" typecode=\""+json[i].typeCode+"\" typename=\""+json[i].typeName+"\" valueName=\""+json[i].valueName+"\" src="/statics/img/linkdel.png">
+                            	listr += </div>;
+                            	listr += <div id="dicTip"+json[i].id></div>;
+                            listr += </li>;
+
+                            //获取该类型代码下最大的一个valueId的值
+                            maxValueId = json[i].valueId;
+                    	}
+
+                    	$("#dicListUL").html(listr);
+
+                    	//当该类型代码typeCode下所有的证件 都遍历显示完成之后 在末尾显示"添加"图标
+                    	$("#addsubdicul").show();
+
+                    	//当点击每个证件类型下的修改图标注意修改时需要哪些字段信息 点击的是图像图标 但是背后传递的参数 修改的只是某个typeCode下的子证件类型的valueName
+                    	//修改某个对象时必须传递该对象的ID 如果对象的某些字段值为null 则不作修改更新 修改删除时需要作信息的提示 以及修改或者添加 需要作重复校验
+                    	$(".modifyDicValue").click(function(){
+                    	    var dic = new Object();
+                            dic.id = $(this).attr("id"); 修改功能必须传递被修改对象的ID
+                    	    dic.typeCode = $(this).attr("typecode");
+                    	    dic.typeName = $(this).attr("typename");
+                    	    dic.valueName = $(this).attr("valuename");
+
+                    	    if(confirm("你确定要修改【"+dic.typeName+"】- 【"+dic.typeCode+"】- 【"+dic.valueName+"】的数据配置吗？")){
+                                var valueName = $.trim($("#valueNameText"+dic.id).val());
+                                if(valueName == null || valueName==""){
+                                    $("#valueNameText"+dic.id).focus();
+                                    $("#dicTip").css("color","red");
+                                    $("#dicTip").html("数值名称不能为空。请重试。");
+                                }else{
+                                    $.ajax({
+                                        url:'/backend/modifydic.html',
+                                        type:'post',
+                                        data:{"dic":JSON.stringify(dic)},
+                                        dataType:'html',
+                                        timeout:1000,
+                                        error:function(){
+
+                                        },
+                                        success:function(data){
+                                            if(data == "success"){
+                                                $("#dicTip"+dic.id).css("color","green");
+                                            	$("#dicTip"+dic.id).html("恭喜您，修改成功。^_^");
+                                            	}else if(data =="nodata"){
+                                            	    $("#dicTip"+dic.id).css("color","red");
+                                            		$("#dicTip"+dic.id).html('对不起,没有任何数据需要处理，请重试。');
+                                            	}else if(data=="rename"){
+                                            		$("#dicTip"+dic.id).css("color","red");
+                                            		$("#dicTip"+dic.id).html('修改失败!该类型代码下的数据名称不能重复,请重试。');
+                                            	}else if(data == "failed"){
+                                            		$("#dicTip"+dic.id).css("color","red");
+                                            		$("#dicTip"+dic.id).html('数据字典修改失败，请重试');
+                                            	}
+                                        }
+                                    });
+                                }
+                    	    }
+                    	});
+
+                    	//当点击某个证件类型下子证件下的删除图标的时候 删除某个对象需要传递的参数
+                    	$(".delDic").click(function(){
+                    	    var del = $(this);
+                    	    var delId = $(this).attr("id");
+                    	    var typeCode = $(this).attr("typecode");
+                    	    var typeName = $(this).attr("typename");
+                    	    var valueName = $(this).attr("valuename");
+
+                    	    if(confirm("你确定需要删除【"+typeName+"】-【"+typeCode+"】-【"+valueName+"】的数据吗？")){
+                    	        $.ajax({
+                    	            url:'/backend/deldic.html',
+                    	            type:'post',
+                    	            data:{"id":delId},
+                    	            dataType:'html',
+                    	            timeout:1000,
+                    	            error:function(){
+
+                    	            },
+                    	            success:function(data){
+                                        if(data !="" && data == "success"){
+                                            del.parent("li"+delId).remove();
+                                        }
+                    	            }
+                    	        });
+                    	    }
+                    	});
+                    }
+                }
+            });
+        });
+
+         //当点击"添加"按钮的时候 这里只是在typeCode下 添加的子证件类型
+        $("#addDicLiBtn").click(function(e){
+            e.preventDefault();
+            $("#addDicSubModel").modal("show");
+        });
+
+        //当用户填写完表单 点击"添加"按钮 提交表单
+        $("#addDicsubExeBtn").click({
+            var dic = new Object();
+            dic.typeCode = $.trim($("#typeDicSubCode").val());
+            dic.typeName = $.trim($("#typeDicSubName").val());
+            dic.valueName = $.trim($("#valueDicSubName").val());
+            $.ajax({
+                url:'/backend/adddicsub.html',
+                type:'post',
+                data:{"dicJson":JSON.stringify(dic)},
+                dataType:'html',
+                timeout:1000,
+                error:function(){
+
+                },
+                success:function(data){
+                    if(data !="" && data =="success"){
+                        var listr += "<li id=\"li\">";
+                        var listr += "<div>类型</div>";
+                    }
+                }
+            });
+        });
+

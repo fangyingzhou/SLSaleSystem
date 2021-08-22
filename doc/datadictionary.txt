@@ -1,0 +1,12 @@
+1.获取数字字典列表：
+    1.
+
+2.修改主数据字典菜单：
+    1.鼠标进入事件：
+    2.鼠标离开事件：
+    3.修改类型代码，判断该类型代码是否已经存在，不同类型代码下可以存在相同的类型名称：
+    4.根据传递过来的类型代码，判断该类型代码是否已经存在:
+        select * from data_dictionary where typeCode = #{typeName} and typeCode not in --新传递过来的typeCode
+            (select typeCode from data_dictionary where typeCode = #{typeCode}) --原始typeCode 查询
+    5.更新：
+        update data_dictionary set typeCode = #{typeCode},typeName = #{typeName} where typeCode = #{valueName}

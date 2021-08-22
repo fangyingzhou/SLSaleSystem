@@ -1,0 +1,78 @@
+1.拦截器只能拦截Controller,请求在进入控制器之前被拦截：
+
+    public boolean preHandle(HttpServletRequest request,HttpServletResponse response,Object handler) throws Exception{
+
+        //
+        HttpSession session = request.getSession();
+
+        //获取当前请求的URI
+        String urlPath = request.getRequestURI();
+
+        User user = (User)session.getAttribute(Constant.SESSION_USER);
+
+        //如果用户为null 则说明当前未登录
+        if(user == null){
+            //重定向到根目录
+            response.sendRedirect("/");
+
+            return false;
+
+        }else{
+
+            //从redis中根据key获取value值 value值即为当前角色可以请求的链接地址
+            String urlKey = "Role-"+user.getRoleId()+"-urlList";
+
+            //当登录的角色 可以请求的链接地址
+            String urlValue = "url:" + RedisAPI.get(urlKey);
+
+            //存储的时候 将系统中的请求url拼接成字符串
+            if(urlKey != null && !urlKey.equal("")){
+                if(urlValue.indexOf(urlPath)>0){
+                    return true;
+                }else{
+                    response.senRedirect("/401.html");
+                    return false;
+                }
+            }
+        }
+    }
+
+2.分布式项目中session失效：
+    1.<%@ page session="false" %>,session的有效作用域是在一个tomcat中；
+
+    2.在脚本中使用作用域取出一个变量，前提是 var data = ${ad1}、var tt =${mList}必须写在jsp中,而不能写在js脚本中；涉及到资源文件的运行原理
+        1.jsp:会把jsp文件翻译成.java文件，如果遇到作用域${ad1}就会解析；jsp是在服务器内部运行
+        2.js:js文件是在浏览器访问的时候，再次发送ajax请求，js文件是什么样的，浏览器就会原样返回给浏览器，js是在浏览器内部运行
+        3.作用域是页面的跳转，在控制器中通过request作用域按照固定的json格式把数据传递给jsp
+
+3.单点登录 SSO：
+    1.单点登录：所谓的单点登录，即一次登录在在其它项目中共享登录状态，其本质就是使用特定的技术在分布式项目中模拟HttpSession的功能；如
+        Redis+Cookie 模拟HttpSession的功能
+
+    2.传统项目：传统项目在用户登录成功后，把用户的信息存储到HttpSession中，即存放到服务器的内存中，由tomcat进行管理,即放到服务器的内存中
+
+    3.Cookie解释:所谓的Cookie即是客户端存值技术,存储位置即是客户端浏览器,因此浏览器可以禁用Cookie,存储的数据类型只能是字符串,
+
+    4.Cookie的运行原理：
+
+        1.当客户端用户在浏览器中输入访问的URL去访问服务器的时候,浏览器就会携带所有有效的Cookie即指定时间内、指定路径内、指定域名内，服务器端
+          tomcat接收到请求后，会在服务器端即tomcat中产生Cookie,并把Cookie存储到请求对象HttpServletRequest中,通过Request即可获取到Cookie
+
+        2.服务器端接收请求之后，在服务器端产生Cookie，并把Cookie放入到HttpServletResponse对象中，响应给浏览器端，注意跳转的方式只能是重定向，
+          客户端在接收到服务器端的响应之后,会把Cookie内容存储到指定的文件夹中；或者<a>标签的超链接、或者window.location.href=""、或者重定向
+
+        3.Cookie是在请求时携带的,因此Cookie中的内容会放到请求对象中，服务器端即可以通过request获取到cookie,把服务器端的内容发送给客户端，只能
+          是响应，因此Cookie是通过response对象发送给客户端的；然后存储到指定的文件夹中；
+
+        4.浏览器第一次访问服务器的时候,此时并没有Cookie，服务器端会产生Cookie,并把该Cookie存放到Response对象中，即Set-Cookie,通过响应头
+          Response-Header响应给浏览器，当再次访问服务器的时候，浏览器就会携带所有有效的Cookie，通过请求头Request Headers发送给服务器端
+
+    5.HttpSession的运行原理：
+        1.当客户端第一次访问服务器的时候，不存在cookie,服务器在接收到请求之后,发现没有JSESSIONID的cookie,那么服务器端就会新建一个session对象，
+        并产生一个UUID,同时也会新建一个Cookie对象，该Cookie对象的key即为JSESSIONID value为UUID；响应的时候会把Cookie响应给浏览器
+
+        2.当第二次访问服务器的时候，浏览器就会在请求头Request Header中携带该Cookie，服务器端在接收到请求之后，就会从Cookie中根据JSESSIONID取出
+        UUID的值，服务器就会从全局属性Map中根据该UUID取出Session,即request.getSession()得底层原理
+
+    6.登录业务：
+        1.

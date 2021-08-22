@@ -1,0 +1,315 @@
+1.商品——套餐关联表：第三方表用于维护商品表与套餐表之间的关联关系：goods_pack_affiliated
+
+    1.套餐_商品维护表中的字段：
+        1.goodsPackId:套餐ID；
+        2.goodsInfoId:商品ID； 商品表中没有套餐ID
+        3.goodsNum:套餐下商品的数量；
+        4.商品表(goods_info)和套餐表(goods_pack)之间没有任何关联，都是通过第三张表goods_pack_affiliated建立关联关系的；
+            1.商品表中没有套餐ID;
+            2.套餐表中没有商品ID;
+            3.商品表中的库存数量num为该商品的实际库存量
+            4.套餐表中的库存数量num为该套餐下各种商品的总和
+            5.套餐_商品关联表中的goodsNum为某件商品在在该套餐中的数量
+            6.因此在查询某一套餐下的商品时就需要借助GoodsPackAffiliated可以获取到该套餐下的商品的数量goodsNum、商品的Id(goodsId)
+
+        5.在修改套餐的时候，在修改"一方"，同时需要考虑修改"对方"信息，因此如果需要根据套餐ID去获取该套餐下的所有商品，就必须借助第三表，
+            那么问题来了，在单独查询第三方关联表的时候,商品的相关信息查询不到，就无法赋值给GoodsPackAffiliated；此时就需要借助ResultMap
+            标签进行两表联合查询
+
+
+    2."一对多"：一个套餐下可能对应多件商品：查询套餐的同时需要带出套餐下的所有商品
+
+        1.ResultType 与 ResultMap的区别:当一条SQL查询语句的查询结果不能满足实体对象的时候，需要使用ResultMap,
+                                       反之使用ResultType;
+
+        2.ResultMap: 由程序员手动控制SQL查询结果与实体对象之间的映射关系
+
+            1.单表查询：只取查询结果中的某些字段
+                <resultMap id="roleMap" type="role">
+                    <id property="id" column="id"/>
+                    <result property="roleName" column="roleName"/>
+                </resultMap>
+                <select id="selectRoleNameAndId" parameterType="role" resultMap="roleMap">
+                    select * from au_role where isStart = 1
+                </select>
+
+            2.使用ResultMap实现关联单个对象：即一个对象的属性中包含另一个对象 如Student属性中包含teacher属性,查询学生的同时带出老师的信息
+                1.N+1方式：
+                    1.在StudentMapper.xml中：
+                        <resultMap type="student" id="mymap" >
+                            <id property="id" column="id"/>
+                            <result property="age" column="age"/>
+                            <result property="name" column="name"/>
+                            <association property="teacher" select="com.bjsxt.mapper.TeacherMapper.selTeacherByTid" column="tid" javaType="teacher">
+                        <resultMap>
+
+                        <select id="selectAllStudent" resultMap="myMap">
+                            select * from student
+                        </select>
+
+                    2.在TeacherMapper.xml中：
+                        <select id="selTeacherByTid" resultType="teacher" parameterType="int">
+                            select * from teacher where id = #{tId}
+                        </select>
+
+
+                    3.需求不确定时使用N+1方式，如有的时候需要查询学生同时查询老师,有的时候只需要查询学生.
+
+
+                2..联合查询方式：
+                    1.只需要在StudentMapper.xml中编写一个SQL语句：
+                        <resultMap type="student" id="mymap">
+                            <id property="id" column="sid"/>
+                            <result property="age" column="age" />
+                            <result property="name" column="sname" />
+                            <result property="tid" column="tid"/>
+                            <association property="teacher" javaType="teacher">
+                             <id property="id" column="tid" />
+                                <result property="name" column="name" />
+                            </association>
+                        </resultMap>
+                        <select id="selectAllStu">
+                            select s.id sid,age age,s.name sname,tid tid,t.id tid from student s left outer teacher t on s.tid = t.id
+                        </select>
+
+                    2.联合查询:需求中确定查询时两个表一定都查询.
+
+            3.使用ResultMap实现关联多个对象：即一个对象的属性中包含另一个对象的集合 如Teacher属性中包含Student集合
+                1.N+1方式：
+                    1.TeacherMapper.xml
+                        <resultMap type="teacher" id="mymap">
+                            <id property="id" column="id" />
+                            <result property="name" column="name" />
+                            <collection property="list" select="com.bjsxt.StudentMapper.selStuByTid" ofType="student" column="id" />
+                        </resultMap>
+
+                        <select id="selAll" resultMap="mymap">
+                            select * from teacher
+                        </select>
+
+                    2.在 StudentMapper.xml 中添加通过 tid 查询
+                        <select id="selByTid" parameterType="int" resultType="student">
+                            select * from student where tid=#{id}
+                        </select>
+
+                2.两表联合查询：联合查询方式
+                    1. mybatis 可以通过主键判断对象是否被加载过.mybatis可以通过主键去判断对象是否被加载，在查询多方的同时,如果主键Id相同就不会去加载一方；
+                        因此不需要担心一方是否被重复创建；不需要担心teacher会被重复创建
+
+                    2. 不需要担心创建重复 Teacher
+
+                    3.在 teacherMapper.xml 中添加
+                        <resultMap type="teacher" id="mymap1">
+                            <id column="tid" property="id"/>
+                            <result column="tname" property="name"/>
+                            <collection property="list" ofType="student" >
+                                <id column="sid" property="id"/>
+                                <result column="sname" property="name"/>
+                                <result column="age" property="age"/>
+                                <result column="tid" property="tid"/>
+                            </collection>
+                        </resultMap>
+
+                        <select id="selAll1" resultMap="mymap1">
+                            select t.id tid,t.name tname,s.id sid,s.name sname,age,tid from teacher t LEFT JOIN student s on t.id=s.tid;
+                        </select>
+
+            4.当一个对象中的某些属性在数据库表中没有与之对应的字段，但是在另一张表中存在与之对应的字段，通过ResultMap两表联合查询获取
+                1.在查询"一方"的同时，带出"多方",除了在"一方"中声明存储"多方"的集合属性外，还可以在"一方"中声明需要查询"多方"的字段；
+                  通过ResultMap和联合查询方式：
+                  <resultMap type="goodsPackAffiliated" id="mymap">
+                    <id property="id" column="id" />
+                    <result property="goodsPackId" column="goodsPackId" />
+                    <result property="goodsInfoId" column="goodsInfoId" />
+                    <result property="goodsName" column="goodsName" />
+                    <result property="goodsNum" column="goodsNum" />
+                    <result property="realPrice" column="realPrice" />
+                    <result property="unit" column="unit" />
+                  </resultMap>
+
+                  <select id="getGoodsAffiliatedListByPackId" parameterType="goodsPackAffiliated" resultMap="mymap">
+                    select * from goods_pack_affiliated a,goods_info g where a.goodsInfoId = g.id
+                        <if test="goodsPackId != null"> and goodsPackId = #{goodsPackId}</if>
+                  </select>
+                2.此处不能使用collection 因为套餐下商品的数量 并不是数据库中的全部数量
+
+        3.当点击修改 按钮 修改某件套餐的时候，在套餐goodspack.js中：
+            1.$(".modifygoodspack").click(function(){
+                var id = $(this).attr("id");
+                window.location.href="/backend/modifygoodspack.html?id="+id;
+              });
+
+            2.当点击修改套餐按钮的时候：根据套餐Id到goods_pack_affiliated中查询出该套餐下所有的商品信息如：
+                 商品在套餐下的数量：goodsNum 商品单价：realPrice 商品名称：goodsName
+                GoodsPackAffiliated goodsPackAffiliated = new GoodsPackAffiliated();
+                goodsPackAffiliated.setGoodsPackId(id);
+                List<GoodsPackAffiliaed> gpaList = goodsPackAffiliatedMapper.getGoodsPackAffiliatedByPackId(goodsPackAffiliated);
+
+                select * goods_pack_affiliated p,goods_info g where p.goodsInfoId = g.id
+                    <if test="goodsPackId != null"> and goodsPackId = #{goodsPackId} </if>
+
+            3.修改套餐"一方"的时候 需要同时需要更新"多方"：
+
+                1.当在商品列表中选择商品 向套餐中添加的时候 或者删除套餐中的商品的时候 都需要重新计算该套餐的总价钱：
+
+                    1.当在商品列表goodslist.jsp中点击添加按钮"+"的时候，向套餐中添加商品的时候 背后需要传递的参数有：该商品的单价、添加的数量
+                        <label class="add" gid="${goodsInfo.id}" rprice="${goodsInfo.realPrice}" gname="${goodsInfo.goodsName}" value="1">
+                            <img src="/statics/img/cancel-on.png" />
+                        </label>
+
+                    2.在商品显示页面中js代码控制：
+                        <script type="text/javascript">
+                            $(document).ready(function(){
+                                $(".add").click(function(){
+                                    var gid = $(this).attr("gid");          //商品ID
+                                    var gname = $(this).attr("gname");      //商品名称
+                                    var rprice = $(this).attr("rprice");    //商品单价
+                                    window.parent.addGoods(gid,rprice,gcount); //调用父页面中函数
+                                });
+                            });
+                        </script>
+
+                    3.在套餐修改页面modifyGoodsPack.jsp js代码：
+                        function addGoods(gid,goodsName,rprice){
+                            var ok = true;
+
+                            //判断套餐中是否存在 待添加的商品
+                            $(".finalresult").each(function(){
+                                var gname = $(this).attr("goodsname");
+                                if(gname == goodsName){
+                                    ok = false;
+                                    return false;
+                                }
+                            });
+
+                            //如果添加的商品 在套餐中不存在
+                            if(ok){
+                                var str = "<div id="selectdiv">
+                                                <label>"+goodsName+"</label>
+                                                <lable class="gcount">
+                                                    <input type="text" class="finalresult" value="1" rprice="+rprice+" goodsid="+gid+">
+                                                </label>
+                                                <label><img src="/static/img/cancel-on.png" /></label>
+                                                <label class="clear"></label>
+                                            </div>";
+
+                                $("#selectgoodslist").append(str);
+
+                                var gcount = $(".finalresult").val();
+                                var tprice = gcount * rprice;
+
+                                var temprice = $("#m_totalPrice").val();
+
+                                if(tempprice =="" || temprice == null){
+                                    temprice = 0;
+                                }
+                                tprice = parseInt(tprice) + parseInt(temprice);
+
+                                $("#m_totalPrice").val(tprice);
+
+                            }
+                        }
+
+                    4.当套餐中的商品发生变化的时候：
+                        $("#selectgoodslist").change(function(){
+                            var totalPrice = 0;
+                            $(".finalresult").each(function(){
+                                var rprice = $(this).attr("rprice");
+                                var gcount = $(this).val();
+                                totalPrice = parseInt(totalPrice) + parseInt(rprice * gcount);
+                            });
+                            $("#m_totalPrice").val(totalPrice);
+                        });
+
+                        //当点击套餐中的删除按钮的时候
+                        $(".del").click(function(){
+                            $(this).parent("#selectdiv").remove();
+                            $("#selectgoodslist").change();
+                        });
+
+                2.当向套餐中添加商品或者删除商品以后，需要将页面中套餐列表写入到数据库
+                    function modifyGoodsPackFunc(){
+                        var json = "[";
+                        $(".finalresult").each(function(){
+                            var gcount = $(this).val();
+                            var goodsId = $(this).attr("goodsid");
+                            json = json+"{\"goodsInfoId\":\""+goodsId+"\","goodsNum":\""+gcount+"\"},";
+                            //json = [{"goodsInfoId":"1","goodsNum":"10"},
+                        });
+                         json = json+"{\"goodsInfoId\":\"0\",\"goodsNum\":\"0\"}";
+                         json = json+"]";
+                         $("#goodsJson").val(json);
+                    }
+                3.修改套餐 需要更新 套餐_商品表：
+                    1.页面表单传递过去的是json格式的数组,封装到GoodsPack对象中；
+                    public Object modifyGoodsPack(GoodsPack goodsPack){
+                        String json = goodsPack.getGoodsJson();
+                        //将json对象转换成List集合
+                        List<GoodsPackAffiliated> gpaList = this.getJavaCollection(GoodsPackAffiliated.class,json);
+                        goodsPackService.modifyGoodsPack();
+                    }
+
+                    public boolean modifyGoodsPack(GoodsPack goodsPack,List<GoodsPackAffiliated> gpaList){
+
+                        int goodsPackId = goodsPack.getId();
+
+                        //1.修改"一方"套餐数据
+                        int index = goodsPackMapper.updateGoodsPack(goodsPack);
+
+                        //2.根据套餐ID 删除套餐_商品表中的所有商品
+                        GoodsPackAffiliated goodsPackAffiliated = new GoodsPaclAffiliated();
+                        goodsPackAffiliated.setGoodsPackId(goodsPackId);
+                        goodsPackAffiliatedMapper.deleteGoodsPackByPackId(goodsPackAffiliated);
+
+                        //3.向套餐_商品表中添加数据 gpaList中的对象只有goodsInfoId、goodsNum属性
+                        if(gpaList != null){
+                           for(GoodsPackAffiliated gpa:gpaList){
+                              if(gpa != null){
+                                gpa.setGoodsPackId(goodsPackId);
+                                goodsPackAffiliatedMapper.insertGoodsPackAffiliated(gpa);
+                              }
+                           }
+                        }
+                        return true;
+                    }
+
+        3.在套餐对象中声明了一个字符串goodsJson属性，用于封装页面传递过来的JSON格式的数组
+
+        4.套餐的上架、下架、删除状态的修改：本质即是根据页面传递过来的字段ID 更新数据库中套餐的状态
+            1.前台页面js代码：每次至更新一件套餐
+                $(".modifyState").click(function(){
+                    var modify = $(this);
+                    var goodsPack = new Object();
+                    var id = $(this).attr("id");
+                    var state = $(this).attr("state");
+                    goodsPack.id = id;
+                    if(state == 1){ //如果商品的状态为上架
+                        goodsPack.state = 2 ;
+                    }else{
+                        goodsPack.state = 1;
+                    }
+
+                    //发送ajax请求到后台controller中更新套餐的状态
+                    $.ajax({
+                        url:'/backend/modifystate.html',
+                        data:{"goodsPack":JSON.stringify(goodsPack)},
+                        type:'post',
+                        dataType:'html',
+                        timeout:1000,
+                        error:function(){
+                            alert("");
+                        },
+                        success:function(data){ //后台返回的更新结果
+                            if(data !="" && data=="success"){
+                                if(state == 1){
+                                     modify.attr("state",2);
+                                }else{
+                                    modify.attr("state",1);
+                                }
+
+                            }
+                        }
+                    });
+                });
+
+            2.一次性更新多件套餐的状态：

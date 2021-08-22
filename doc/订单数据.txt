@@ -1,0 +1,25 @@
+1.订单表tb_order:一方，只有一行数据，相当于主表
+    1.order_id:订单ID
+    2.payment:实际付款金额
+    3.payment_type:支付方式，在线支付、货到付款
+    4.status:订单的状态 1.未付款 2.已付款 3.未发货 4.已发货
+    5.create_time:订单创建时间 update_time:订单更新时间 payment_time 支付时间 consign_time 发货时间
+    6.end_time:交易完成时间 close_time:交易关闭时间
+    7.shipping_name:物流名称 shipping_code:物流单号
+    8.user_id:用户ID buyer_message:买家留言 buyer_nick:买家昵称 buyer_rate:买家是否已评价
+
+2.订单商品表tb_order_item:订单下包含的商品信息， 一张订单下包含多件商品 即一对多 相当于商品明细表
+    1.order_id:订单ID
+    2.item_id:商品ID
+    3.num:购买商品的数量 对应购物车中商品的数量 需要判断库存是否足够
+    4.title:商品的标题
+    5.total_price:商品的总金额，
+    6.pic_path:商品图片的地址
+
+3.收货用户地址表：tb_order_shiping:用于维护常用的收货地址信息
+    1.order_id:对应的订单ID
+    2.receiver_name:收货人名称
+    3.receiver_phone:收货人联系电话
+    4.receiver_state:省份 receiver_city:城市 receiver_district:区/县 receiver_address:收货地址，如：xx路xx号
+    5.receiver_zip:邮政编码 如100000
+    6.created:创建时间 updated:更新时间

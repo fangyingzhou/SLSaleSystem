@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.slsale.mapper.goodsinfo.GoodsInfoMapper">
+
+    <select id="selectGoodsInfoListByPage" parameterType="goodsInfo" resultType="goodsInfo">
+        select * from goods_info
+            <trim prefix="where" prefixOverrides="and | or">
+                <if test="goodsName != null"> and goodsName like #{goodsName}</if>
+                <if test="state != null"> and state = #{state}</if>
+            </trim> order by lastUpdateTime desc limit #{starNum},#{pageSize}
+    </select>
+
+    <select id="selectTotalCount" parameterType="goodsInfo" resultType="int">
+        select count(1) from goods_info
+            <trim prefix="where" prefixOverrides="and | or">
+                <if test="goodsName != null"> and goodsName = #{goodsName}</if>
+                <if test="state != null"> and state = #{state}</if>
+            </trim>
+    </select>
+
+    <select id="selectGoodsInfoById" parameterType="goodsInfo" resultType="goodsInfo">
+        select * from goods_info where id = #{id}
+    </select>
+
+    <select id="goodsSNIsExist" parameterType="goodsInfo" resultType="int">
+        select count(1) from goods_info where goodsSN = #{goodsSN} and id != #{id}
+    </select>
+
+    <update id="updateGoodsInfo" parameterType="goodsInfo">
+        update goods_info
+            <set>
+                <if test="goodsSN != null"> goodsSN = #{goodsSN},</if>
+                <if test="goodsName != null"> goodsName = #{goodsName},</if>
+                <if test="marketPrice != null"> marketPrice = #{marketPrice},</if>
+                <if test="realPrice != null"> realPrice = #{realPrice},</if>
+                <if test="state != null"> state = #{state},</if>
+                <if test="num != null"> num = #{num},</if>
+                <if test="unit != null"> unit = #{unit},</if>
+                <if test="goodsFormat != null"> goodsFormat = #{goodsFormat},</if>
+                <if test="note != null"> note = #{note},</if>
+                <if test="createdBy != null"> createdBy = #{createdBy},</if>
+                <if test="createTime != null"> createTime = #{createTime},</if>
+                <if test="lastUpdateTime != null"> lastUpdateTime = #{lastUpdateTime}</if>
+            </set> where id = #{id}
+    </update>
+
+    <update id="updateGoodsInfoState" parameterType="goodsInfo">
+        update goods_info set state = #{state} where id = #{id}
+    </update>
+</mapper>

@@ -1,0 +1,76 @@
+1.使用JSONP解决跨域(只能解决get请求，不支持post请求)：
+
+    1.一个Servlet容器(tomcat)中的项目调用另一个Servlet容器(tomcat)中的项目，称之为跨域，跨域的本质是，使用ajax请求另一个服务器中的项目，就会产生跨域，
+        跨域属于浏览器安全策略问题，不属于网络架构安全问题；
+
+    2.jsonp的发展由来：
+        1.在一个项目中ajax不能进行跨域请求，即不能通过ajax在一个项目中去访问另一个项目；但是我们发现可以在一个项目中可以直接访问另一个
+            项目的js文件:
+                <script type="text/javascript" src="http://localhost:9002/js/jquery-1.7.2.js"></script>
+
+        2.我们也可以通过ajax请求，去访问另一个项目中的js文件：
+                $.post("http：//localhost:9002/js.demo.js",function(data){alert(data),"script"});
+
+        3.综合以上1、2两点，我们可以通过ajax去访问另一个项目中的控制器controller，将控制器的返回结果伪装成js文件；
+
+    3.返回的数据格式：
+        1.使用jsonp进行跨域请求的时候，服务器端返回的数据必须满足特定的数据格式：
+            函数名(返回的数据);
+                1.函数名：当客户端接收到服务器端返回的数据之后，函数名是什么，就自动调用客户端相对应的函数；因此必须在客户端告诉服务器端，
+                    客户端最终回调的函数是什么；
+                2.客户端可以通过jsonp参数：设置参数的名称默认为callback；通过jsonpCallback参数：设置具体的函数名称 也即是服务器端
+                    返回的函数名称，也即是客户端回调的函数名称；
+
+        2.<script type="text/javascript">
+            $(function(){
+                $("#bt1").click(
+                     $.ajax({
+                        url:'http://localhost:9002/demo2',
+                        type:'post',
+                        dataType:'jsonp',//这里一旦设置为jsonp就要求服务器端返回的数据格式 必须严格按照jsonp要求的数据格式 伪装js文件
+                        jsonp:'callback',//使用jsonp进行跨域请求的时候所传递的参数的名称 可以省略不写 jquery默认为callback
+                        jsonpCallback:'abc',//参数名称所对应的参数值 为了告诉服务器端，回调客户端中的那个函数 可以省略不写 默认为自动生成
+                        success:function(data){
+                              alert(data);
+                          }
+                        });
+                );
+            });
+          </script>
+
+        3.控制器中：借助Spring对Jackjson封装的一个类MappingJacksonValue
+            @@RequestMapping(value="")
+            @ResponseBody
+            public MappingJacksonValue demo(String clllback){ //相当于参数jsonp中设置的值 请求时的参数名称
+                People p = new People()；
+
+                MappingJacksonValue mjv = new MappingJacksonValue(p); //把实体对象转换成json数据格式字符串当作最终的返回数据
+
+                mjv.setJsonFunction(callback);//最终返回结果中的函数名称
+
+                return mjv;
+            }
+
+2.使用HttpClient进行转发，效率低，会发送两次请求;隐藏调用真实接口的地址，安全性较高，与nginx反向代理类似
+    1.htpclient技术：使用Java代码模拟浏览器实现请求以及响应,
+    2.httpclient依赖的jar:
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient<.artifactId>
+        </dependency>
+
+3.设置响应头：
+    @RequestMapping(value="")
+    public Map<String,Object> getInfo(HttpServletResponse response){
+        response.setHeader("Access-Control-Allow-Origin","*");
+        Map<String,Object> map = new HashMap<>();
+        map.put("status",200);
+        map.put("msg","登录成功");
+        return map
+    }
+
+4.使用nginx搭建API接口网关
+    1.使用Nginx搭建API接口网关,因为保证域名和端口都一致,以项目区分反向代理到真实服务器地址；
+
+5.使用Zuul微服务搭建API接口网关
+    1.rpc之间通讯是不会产生跨域问题的，因为走的是后端访问；

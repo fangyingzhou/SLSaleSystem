@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.slsale.mapper.goodspack.GoodsPackMapper">
+
+   <select id="selectGoodsPackListByPage" parameterType="goodsPack" resultType="goodsPack">
+       select * from goods_pack
+       <trim prefix="where" prefixOverrides="and | or">
+           <if test="goodsPackName != null">
+               and goodsPackName like #{goodsPackName}
+           </if>
+           <if test="state != null">
+               and state = #{state}
+           </if>
+           <if test="typeId != null">
+               and typeId = #{typeId}
+           </if>
+       </trim>
+       order by lastUpdateTime desc limit #{starNum},#{pageSize}
+   </select>
+
+    <select id="selectTotalCount" parameterType="goodsPack" resultType="int">
+        select count(1) from goods_pack
+        <trim prefix="where" prefixOverrides="and | or">
+            <if test="goodsPackName != null">
+                and goodsPackName like concat {"%",#{goodsPackName},"%"}
+            </if>
+            <if test="state != null">
+                and state = #{state}
+            </if>
+            <if test="typeId != null">
+                and typeId = #{typeId}
+            </if>
+        </trim>
+    </select>
+
+    <select id="selectGoodsPackById" parameterType="goodsPack" resultType="goodsPack">
+        select * from goods_pack where id = #{id}
+    </select>
+
+    <update id="updateGoodsPack" parameterType="goodsPack">
+        update goods_pack
+        <set>
+            <if test="goodsPackCode != null"> goodsPackCode = #{goodsPackCode},</if>
+            <if test="goodsPackName != null"> goodsPackName = #{goodsPackName},</if>
+            <if test="typeId != null"> typeId = #{typeId},</if>
+            <if test="typeName != null"> typeName = #{typeName},</if>
+            <if test="totalPrice != null"> totalPrice = #{totalPrice},</if>
+            <if test="num != null"> num = #{num},</if>
+            <if test="note != null"> note = #{note},</if>
+            <if test="state != null"> state = #{state},</if>
+            <if test="createdBy != null"> createdBy = #{createdBy},</if>
+            <if test="createTime != null"> createTime = #{createTime},</if>
+            <if test="lastUpdateTime != null"> lastUpdateTime = #{lastUpdateTime}</if>
+        </set>
+                where id = #{id}
+    </update>
+</mapper>
