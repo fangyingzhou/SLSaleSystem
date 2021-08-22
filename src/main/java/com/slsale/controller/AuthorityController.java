@@ -155,6 +155,7 @@ public class AuthorityController {
 
     public String gitHub(){
         String result ="push github";
+        String str ="从gihub上pull拉取代码";
         return result;
     }
 
