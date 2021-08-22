@@ -158,4 +158,10 @@ public class AuthorityController {
 
         return result;
     }
+
+    public String gitHub(){
+        String result ="push github";
+        return result;
+    }
+
 }
