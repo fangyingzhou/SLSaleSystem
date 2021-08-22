@@ -73,6 +73,7 @@
 					  <label class="control-label" for="typeahead">相关商品: </label>
 					  <div class="controls">
 						<ul class="aboutproductsList">
+							<!--显示系统中所有的商品-->
 						  	<li><iframe id="goodsListFrame" class="goodsListFrame" src="/backend/goodslist.html"></iframe></li>
 						  	<li id="selectgoodslist"></li>
 					  	</ul>

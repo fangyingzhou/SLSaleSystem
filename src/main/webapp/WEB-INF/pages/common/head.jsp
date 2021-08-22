@@ -95,7 +95,7 @@
 						<li><a href="/main.html">首页</a></li>
 						<li><a href="#">购物车</a></li>
 						<li><a href="#">留言板</a></li>
-						<li><a href="javascript:void();" class="btn-setting modifypwd">修改密码</a></li>
+						<li><a href="javascript:void(0);" class="btn-setting modifypwd">修改密码</a></li>
 						<li><a href="/logout.html">注销</a></li>
 					</ul>
 				</div>

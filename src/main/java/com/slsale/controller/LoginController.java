@@ -51,7 +51,7 @@ public class LoginController extends BaseController{
     public Object login(@RequestParam String user, HttpSession session){
 
         try {
-            if(user == null){
+            if(user == null || user.equals("")){
                 return "nodata";
             }else{
                 JSONObject jsonObject = JSONObject.fromObject(user);
@@ -119,6 +119,8 @@ public class LoginController extends BaseController{
                 if(!redisAPI.exists(roleKey)){
                     Authority authority = new Authority();
                     authority.setRoleId(user.getRoleId());
+
+                    //select * from au_function where parentId > 0 and id in (select functionId from au_authority where roleId = #{roleId})
                     List<Function> fList = functionService.getFunctionListByRoleId(authority);
 
                     if (fList != null){
@@ -167,5 +169,10 @@ public class LoginController extends BaseController{
             e.printStackTrace();
         }
         return menuList;
+    }
+
+    @RequestMapping(value="/401.html")
+    public String noRole(){
+        return "401";
     }
 }

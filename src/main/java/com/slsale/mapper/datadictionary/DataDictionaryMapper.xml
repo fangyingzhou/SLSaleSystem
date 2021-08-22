@@ -8,4 +8,47 @@
         select * from data_dictionary where typeCode = #{typeCode};
     </select>
 
+    <select id="selectDataDictionaryByCategory" resultType="dataDictionary">
+        select * from data_dictionary group by typeCode order by id asc
+    </select>
+
+    <update id="updateDataDictionary" parameterType="dataDictionary">
+        update data_dictionary
+            <set>
+                <if test="typeCode != null "> typeCode = #{typeCode},</if>
+                <if test="typeName != null"> typeName = #{typeName},</if>
+                <if test="valueId != null"> valueId = #{valueId},</if>
+                <if test="valueName != null"> valueName = #{valueName}</if>
+            </set> where id = #{id}
+    </update>
+
+    <select id="typeCodeOrValueNameIsExist" parameterType="dataDictionary" resultType="int">
+        select count(1) from data_dictionary
+            <trim prefix="where" prefixOverrides="and | or">
+                <if test="typeCode != null"> and typeCode = #{typeCode}</if>
+                <if test="valueName != null"> and valueName = #{valueName}</if>
+                <if test="id != null"> and id != #{id}</if>
+            </trim>
+    </select>
+
+    <delete id="deleteDataDictionary" parameterType="dataDictionary">
+        delete from data_dictionary where id = #{id}
+    </delete>
+
+    <select id="selectMaxValueId" parameterType="dataDictionary" resultType="int">
+        select max(valueId) from data_dictionary where typeCode = #{typeCode}
+    </select>
+
+    <insert id="insertDataDictionary" parameterType="dataDictionary">
+        insert into data_dictionary(typeCode,typeName,valueId,valueName) values (#{typeCode},#{typeName},#{valueId},#{valueName})
+    </insert>
+
+    <select id="selectDataDictionaryListTypeCodeNotIn" parameterType="dataDictionary" resultType="dataDictionary">
+        select * from data_dictionary where typeCode = #{typeName} and typeCode not in(
+                select typeCode from data_dictionary where typeCode = #{typeCode})
+    </select>
+
+    <update id="updateDataDictionaryByTypeCode" parameterType="dataDictionary">
+        update data_dictionary set typeCode = #{typeCode},typeName = #{typeName} where typeCode = #{valueName}
+    </update>
 </mapper>

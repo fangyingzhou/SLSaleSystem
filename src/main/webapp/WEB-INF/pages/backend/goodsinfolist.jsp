@@ -90,8 +90,8 @@
 					<div class="pagination pagination-centered">
 					  <ul>
 					   <c:choose>
-					  	<c:when test="${page.page == 1}">
-					  	<li class="active"><a href="javascript:void();" title="首页">首页</a></li>
+					  	<c:when test="${page.pageNo == 1}">
+					  	<li class="active"><a href="javascript:void(0);" title="首页">首页</a></li>
 					  	</c:when>
 					  	<c:otherwise>
 					  	<li><a href="/backend/goodsinfolist.html?currentpage=1&s_goodsName=${s_goodsName}&s_state=${s_state}" title="首页">首页</a></li>
@@ -105,7 +105,7 @@
 							</c:forEach>
 						</c:if>
 						<li class="active">
-						  <a href="#" title="${page.page}">${page.page}</a>
+						  <a href="#" title="${page.pageNo}">${page.pageNo}</a>
 						</li>
 						<c:if test="${page.nextPages!=null}">
 							<c:forEach items="${page.nextPages}" var="num">
@@ -115,8 +115,8 @@
 						</c:if>
 						<c:if test="${page.pageCount !=null}">
 							<c:choose>
-						  	<c:when test="${page.page == page.pageCount}">
-						  	<li class="active"><a href="javascript:void();" title="尾页">尾页</a></li>
+						  	<c:when test="${page.pageNo == page.pageCount}">
+						  	<li class="active"><a href="javascript:void(0);" title="尾页">尾页</a></li>
 						  	</c:when>
 						  	<c:otherwise>
 						  	<li><a href="/backend/goodsinfolist.html?currentpage=${page.pageCount}&s_goodsName=${s_goodsName}&s_state=${s_state}" title="尾页">尾页</a></li>
@@ -124,7 +124,7 @@
 						    </c:choose>
 					    </c:if>
 						<c:if test="${page.pageCount == null}">
-						<li class="active"><a href="javascript:void();" title="尾页">尾页</a></li>
+						<li class="active"><a href="javascript:void(0);" title="尾页">尾页</a></li>
 					  	</c:if>
 					  </ul>
 				  </div>
@@ -235,8 +235,7 @@
 					<div class="clear"></div>
 					<ul class="downul">
 					<li id="m_state"></li>
-					<li id="m_goodsFormatli">
-					</li>
+					<li id="m_goodsFormatli"></li>
 					</ul>
 					<ul class="downul">
 					<li id="m_noteli">
@@ -301,4 +300,4 @@
 	 </div>
 	
 <%@include file="/WEB-INF/pages/common/foot.jsp"%>
-<script type="text/javascript" src="/statics/localjs/goodsinfolist.js"></script> 
+<script type="text/javascript" src="/statics/localjs/.goodsinfolist21.js"></script>

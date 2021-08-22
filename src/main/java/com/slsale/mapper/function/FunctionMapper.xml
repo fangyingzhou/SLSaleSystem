@@ -24,4 +24,12 @@
     <select id="selectSubFunctionList" resultType="function" parameterType="function">
         select * from au_function where parentId = #{id}
     </select>
+    <!--select * from au_function where id in(2,13,14,15,16,6,17,18,19,21)
+ or parentId in(select id from au_function where id in
+(2,13,14,15,16,6,17,18,19,21) and parentId > 0) or parentId = 999-->
+    <select id="selectFunctionListByIdIn" parameterType="string" resultType="function">
+        select * from au_function where id in (#{idInString}) or
+           parentId in (select id from au_function where id in #{idInString} and parentId > 0) or
+           parentId = 999;
+    </select>
 </mapper>

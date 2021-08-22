@@ -81,10 +81,13 @@
 					  <label class="control-label" for="typeahead">相关商品: </label>
 					  <div class="controls">
 						<ul class="aboutproductsList">
+							<!--这里显示的是数据库中所有的商品-->
 						  	<li><iframe id="goodsListFrame" class="goodsListFrame" src="/backend/goodslist.html"></iframe></li>
+
+							<!--这里显示的是当前修改套餐下的所有商品-->
 						  	<li id="selectgoodslist">
-						  		<c:if test="${goodsList != null}">
-					 				<c:forEach items="${goodsList}" var="goods">
+						  		<c:if test="${gpaList != null}">
+					 				<c:forEach items="${gpaList}" var="goods">
 					 				<div id="selectdiv">
 					 				<label class="goodsname">${goods.goodsName}</label>
 									<label class="goodscount"><input class="finalresult" goodsid="${goods.goodsInfoId}" rprice="${goods.realPrice}" type="text" value="${goods.goodsNum}"/></label>
@@ -115,4 +118,4 @@
 		</div><!--/row-->
                 
 <%@include file="/WEB-INF/pages/common/foot.jsp"%>
-<script type="text/javascript" src="/statics/localjs/modifygoodspack.js"></script> 
+<script type="text/javascript" src="/statics/localjs/modifygoodspack2.js"></script>

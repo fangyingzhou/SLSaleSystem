@@ -18,29 +18,29 @@
 						<table class="table table-striped table-bordered bootstrap-datatable datatable">
 						  <tbody>
 						  <tr>
-						  <td width="200px;">
-						  <ul class="rolelistul">
-						  <c:forEach items="${roleList}" var="role">
-						  	<li>
-						  		<a class="roleNameAuthority" rolename="${role.roleName}" roleid="${role.id}">${role.roleName}</a>
-						  	</li>
-						  </c:forEach>
-						  </ul>
-						  </td>
-						  <td>
-						  <h3 id="selectrole"></h3>
-						  <input type="hidden" id="roleidhide" value=""/>
-						    <p class="btn-group">
-						    	<button class="btn" id="selectAll">全选</button>
-							  	<button class="btn" id="unSelect">全不选</button>
-							  	<button class="btn" id="reverse">反选</button>
-							 </p>
-						  	<ul id="functionList"></ul>
-						  	<div class="clear"></div>
-						  	<p class="center">
-								<a id="confirmsave" class="btn btn-large btn-primary"><i class="icon-chevron-left icon-white"></i> 确定赋予权限</a> 
-							</p>
-						  </td>
+							  <td width="200px;">
+								  <ul class="rolelistul">
+									  <c:forEach items="${roleList}" var="role">
+										<li>
+											<a class="roleNameAuthority" rolename="${role.roleName}" roleid="${role.id}">${role.roleName}</a>
+										</li>
+									  </c:forEach>
+								  </ul>
+							  </td>
+							  <td>
+								  <h3 id="selectrole"></h3>
+								  <input type="hidden" id="roleidhide" value=""/>
+									<p class="btn-group">
+										<button class="btn" id="selectAll">全选</button>
+										<button class="btn" id="unSelect">全不选</button>
+										<button class="btn" id="reverse">反选</button>
+									 </p>
+										<ul id="functionList"></ul>
+										<div class="clear"></div>
+										<p class="center">
+											<a id="confirmsave" class="btn btn-large btn-primary"><i class="icon-chevron-left icon-white"></i> 确定赋予权限</a>
+									 	</p>
+							  </td>
 						  <tr>
 						  </tbody>
 					  </table>   
@@ -78,4 +78,4 @@
 	 </div>
 <%@include file="/WEB-INF/pages/common/foot.jsp"%>
 
-<script type="text/javascript" src="/statics/localjs/authoritymanage.js"></script>
+<script type="text/javascript" src="/statics/localjs/authoritymanage1.js"></script>

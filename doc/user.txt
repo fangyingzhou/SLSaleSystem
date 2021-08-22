@@ -123,4 +123,10 @@
         6.获取相对路径 相对于项目的根路径
           String path = request.getContextPath() 获取的即是 / 可用于图片的回显
 
+        7.使用kindeditor插件，实现多文件的上传 注意：控制器的返回值Map<String,Object>
+
+            1.FTPClient技术是一种使用Java代码将文件上传到VSFTPD服务器的一种技术；
+            2.所依赖的jar包<groupId>commons-net<groupId><artifactId>commons-net<artifactId>
+            3.使用FtpClient的工具类FtpUtils.upload(host,port,username,password,filename,inputStream);
+            4.访问VSFTPD图片服务器中的路径http://192.168.9.129:80/t.gif
 

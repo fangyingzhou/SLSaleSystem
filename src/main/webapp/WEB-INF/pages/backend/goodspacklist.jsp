@@ -100,8 +100,8 @@
 					<div class="pagination pagination-centered">
 					  <ul>
 					  <c:choose>
-					  	<c:when test="${page.page == 1}">
-					  	<li class="active"><a href="javascript:void();" title="首页">首页</a></li>
+					  	<c:when test="${page.pageNo == 1}">
+					  	<li class="active"><a href="javascript:void(0);" title="首页">首页</a></li>
 					  	</c:when>
 					  	<c:otherwise>
 					  	<li><a href="/backend/goodspacklist.html?currentpage=1&s_goodsPackName=${s_goodsPackName}&s_state=${s_state}&s_typeId=${s_typeId}" title="首页">首页</a></li>
@@ -114,7 +114,7 @@
 							</c:forEach>
 						</c:if>
 						<li class="active">
-						  <a href="#" title="${page.page}">${page.page}</a>
+						  <a href="#" title="${page.pageNo}">${page.pageNo}</a>
 						</li>
 						<c:if test="${page.nextPages!=null}">
 							<c:forEach items="${page.nextPages}" var="num">
@@ -124,8 +124,8 @@
 						</c:if>
 						<c:if test="${page.pageCount !=null}">
 							<c:choose>
-						  	<c:when test="${page.page == page.pageCount}">
-						  	<li class="active"><a href="javascript:void();" title="尾页">尾页</a></li>
+						  	<c:when test="${page.pageNo == page.pageCount}">
+						  	<li class="active"><a href="javascript:void(0);" title="尾页">尾页</a></li>
 						  	</c:when>
 						  	<c:otherwise>
 						  	<li><a href="/backend/goodspacklist.html?currentpage=${page.pageCount}&s_goodsPackName=${s_goodsPackName}&s_state=${s_state}&s_typeId=${s_typeId}" title="尾页">尾页</a></li>
@@ -133,7 +133,7 @@
 						    </c:choose>
 					    </c:if>
 						<c:if test="${page.pageCount == null}">
-						<li class="active"><a href="javascript:void();" title="尾页">尾页</a></li>
+						<li class="active"><a href="javascript:void(0);" title="尾页">尾页</a></li>
 					  	</c:if>
 					  </ul>
 				  </div>
@@ -142,4 +142,4 @@
 		</div><!--/row-->
 	
 <%@include file="/WEB-INF/pages/common/foot.jsp"%>
-<script type="text/javascript" src="/statics/localjs/goodspacklist.js"></script> 
+<script type="text/javascript" src="/statics/localjs/goodspacklist22.js"></script>

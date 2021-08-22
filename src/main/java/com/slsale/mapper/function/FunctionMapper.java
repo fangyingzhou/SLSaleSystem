@@ -2,6 +2,7 @@ package com.slsale.mapper.function;
 
 import com.slsale.pojo.Authority;
 import com.slsale.pojo.Function;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -27,4 +28,6 @@ public interface FunctionMapper {
     //不限于角色 查询所有的一级主菜单 以及二级菜单
     public List<Function> selectSubFunctionList(Function function);
 
+    //@Param注解的作用即是给参数命名 参数命名后就能根据参数的名称获取参数值 正确的传入到sql中 一般通过#{}的方式
+    public List<Function> selectFunctionListByIdIn(@Param("idInString")String idInString);
 }

@@ -4,8 +4,9 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.slsale.mapper.role.RoleMapper">
 
+    <!--resultMap 由程序员手动控制 SQL查询结果与实体对象之间的映射关系-->
     <resultMap id="roleNameAndId" type="role">
-        <id property="id" column="id"/>
+        <id property="id" column="id"/>   <!--主键使用id标签配置映射关系-->
         <result property="roleName" column="roleName"/>
     </resultMap>
     <select id="selectRoleNameAndId" resultMap="roleNameAndId">

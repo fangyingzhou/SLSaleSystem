@@ -1,7 +1,7 @@
 package com.slsale.pojo;
 
 /**
- * GoodsPackAffiliated
+ * GoodsPackAffiliated 商品套餐关联表 一个套餐下 可能包含多张商品表
  * @author bdqn_hl
  * @date 2014-2-21
  */

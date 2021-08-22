@@ -34,7 +34,8 @@
 						  		${dl.typeName}
 						  		</a>
 						  		<span class="mainset">
-									<img class="modifyMainDic" dictypename="${dl.typeName}" dicid="${dl.id}" dictypecode="${dl.typeCode}" src="/statics/img/ico10.png"> <img class="delMainDic" dictypecode="${dl.typeCode}" dictypename="${dl.typeName}" src="/statics/img/linkdel.png">
+									<img class="modifyMainDic" dictypename="${dl.typeName}" dicid="${dl.id}" dictypecode="${dl.typeCode}" src="/statics/img/ico10.png">
+									<img class="delMainDic" dictypecode="${dl.typeCode}" dictypename="${dl.typeName}" src="/statics/img/linkdel.png">
 								</span>
 						  	</li>
 						  </c:forEach>
@@ -98,6 +99,7 @@
 						<a href="#" id="addDicExeBtn" class="btn btn-primary">添加</a>
 					</div>
 				</div>
+
 			<div class="modal hide fade" id="addDicSubModel">
 					<div class="modal-header">
 						<button type="button" class="close" data-dismiss="modal">×</button>
@@ -118,7 +120,7 @@
 						<a href="#" class="btn" data-dismiss="modal">取消</a>
 						<a href="#" id="addDicsubExeBtn" class="btn btn-primary">添加</a>
 					</div>
-				</div>
+			</div>
 			<div class="modal hide fade" id="modifyDicModel">
 					<div class="modal-header">
 						<button type="button" class="close" data-dismiss="modal">×</button>
@@ -144,4 +146,4 @@
 
 
 <%@include file="/WEB-INF/pages/common/foot.jsp"%>
-<script type="text/javascript" src="/statics/localjs/dicmanage.js"></script>
+<script type="text/javascript" src="/statics/localjs/dicmanage12.js"></script>

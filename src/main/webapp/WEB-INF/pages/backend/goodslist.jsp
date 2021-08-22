@@ -45,17 +45,20 @@ label{float: left;}
 h2 a{font-size:12px;color:green;}
 </style>
 <!-- jQuery -->
-<script src="/statics/js/jquery-1.7.2.min.js"></script>
-<script type="text/javascript">
-$(document).ready(function(){
-	$(".add").click(function(){
-		gid = $(this).attr("gid");
-		gname = $(this).attr("gname");
-		rprice = $(this).attr("rprice");
-		window.parent.addGoods(gid,gname,rprice);
+	<script src="/statics/js/jquery-1.7.2.min.js"></script>
+	<script type="text/javascript">
+	$(document).ready(function(){
+		$(".add").click(function(){
+
+			var gid = $(this).attr("gid");
+			var gname = $(this).attr("gname");
+			var rprice = $(this).attr("rprice")
+			//
+			window.parent.addGoods(gid,gname,rprice);
+		});
 	});
-});
 </script>
+
 </head>
 <body>
 	<h2>商品列表</h2>
